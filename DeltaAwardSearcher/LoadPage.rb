@@ -1,7 +1,9 @@
 require "net/http"
 require "uri"
+require 'open-uri'
+require 'DeltaSite'
 
-uri = URI.parse("http://www.delta.com/awards/dwr/call/plaincall/AwardsScreenProcessor.getCalendar.dwr")
+# uri = URI.parse("http://www.delta.com/awards/dwr/call/plaincall/AwardsScreenProcessor.getCalendar.dwr")
 
 params = {
   "callCount"  => "1",
@@ -25,14 +27,57 @@ params = {
   "batchId"  => "3"
 }
 
+paramsGet = {:EventId => 'VIEW_CALENDAR',
+  :hiddenFieldsId => 'KdL3vjvOOLe6KBx',
+  :dispatchMethod => 'processHomeRTR',
+  :checksum => '1660819092*49',
+  :tSession => 'null',
+  :UIStatus => 'F',
+  :tSession_Cal => 'DeptNLI6301614',
+  :tSession_1DS => 'null',
+  :pricingSearch => 'true',
+  :ts => '1399580594852',
+  :js_ts => '1399580572983' }
+
+# Gets the sessionID
+d = DeltaSite.new()
+cohrAwdSessID =  d.getCohrAwdSessID()
+
+uri = URI.parse( "http://www.delta.com/awards/selectFlights.do;cohrAwdSessID=" + cohrAwdSessID);
+
+http = Net::HTTP.new(uri.host, uri.port)
+request = Net::HTTP::Get.new(uri.path)
+request.set_form_data( paramsGet )
+
+# instantiate a new Request object
+request = Net::HTTP::Get.new( uri.path+ '?' + request.body )
+
+response = http.request(request)
+responsePage =  response.body
+
+File.open('delta.html', 'w') { |file| file.write(responsePage) }
+
+uri = URI.parse('')
+# Add params to URI
+uri.query = URI.encode_www_form( paramsGet )
 # Shortcut
-response = Net::HTTP.post_form(uri, params)
+
+puts Net::HTTP.get(uri)
+
+# response = Net::HTTP.get('http://www.delta.coSm/awards/selectFlights.do;cohrAwdSessID=CuLXkSf0uPhaBRg?EventId=VIEW_CALENDAR&hiddenFieldsId=CuLXkSf0uPhaBRg&dispatchMethod=processHomeRTR&checksum=1577656521*127&tSession=null&UIStatus=F&tSession_Cal=DeptNLI1945970&tSession_1DS=null&pricingSearch=true&ts=1399578818171&js_ts=1399578796335#jump')
+
+#all_cookies = esponse.get_fields('set-cookie')
+#puts all_cookies;
+#puts '###'
+
+# class="lw_active" id="cal_0_day_0_2_03Jun_d"
+# class="md_active" id="cal_0_day_0_2_03Jun_d"
 
 # Full control
-http = Net::HTTP.new(uri.host, uri.port)
-
-request = Net::HTTP::Post.new(uri.request_uri)
-request.set_form_data(params)
+#http = Net::HTTP.new(uri.host, uri.port)
+#
+#request = Net::HTTP::Post.new(uri.request_uri)
+#request.set_form_data(params)
 
 response = http.request(request)
 
