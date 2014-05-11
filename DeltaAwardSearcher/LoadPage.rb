@@ -19,31 +19,35 @@ params = {
   "c0-param3"  => "boolean:false",
   "c0-param4"  => "string:GRU",
   "c0-param5"  => "string:DTW",
-  "c0-param6"  => "string:24",
-  "c0-param7"  => "string:Jun",
+  "c0-param6"  => "string:16",
+  "c0-param7"  => "string:Jul",
   "c0-param8"  => "string:1",
   "c0-param9"  => "string:Coach",
   "c0-param10"  => "string:Outbound",
   "batchId"  => "3"
 }
 
+
 paramsGet = {:EventId => 'VIEW_CALENDAR',
-  :hiddenFieldsId => 'KdL3vjvOOLe6KBx',
+  :hiddenFieldsId => '0tfYOc4yCPQLgNI',
   :dispatchMethod => 'processHomeRTR',
-  :checksum => '1660819092*49',
+  :checksum => '258445868*23',
   :tSession => 'null',
   :UIStatus => 'F',
-  :tSession_Cal => 'DeptNLI6301614',
+  :tSession_Cal => 'DeptNLI8836218',
   :tSession_1DS => 'null',
   :pricingSearch => 'true',
-  :ts => '1399580594852',
-  :js_ts => '1399580572983' }
+  :ts => '1399639440191',
+  :js_ts => '1399639418078' }
 
 # Gets the sessionID
 d = DeltaSite.new()
 cohrAwdSessID =  d.getCohrAwdSessID()
 
 uri = URI.parse( "http://www.delta.com/awards/selectFlights.do;cohrAwdSessID=" + cohrAwdSessID);
+
+
+
 
 http = Net::HTTP.new(uri.host, uri.port)
 request = Net::HTTP::Get.new(uri.path)
