@@ -10,83 +10,24 @@ class DeltaSite
   def initialize()
   end
 
+  def getTSession_Cal(response)
+    if response.body =~ /(?m)tSession_Cal=\K\w*/
+      return checksum = $&
+    end
+
+    raise 'tSession_Cal not found'
+  end
+
   #
   # Gets the authentication token
   #
-  def getCohrAwdSessID
-    uriAddress = 'http://www.delta.com/awards/selectFlights.do?dispatchMethod=processHomeRTR&EventId=PROCESS_HOME_RTR'
-    params = {
-      'oneWayOrRTR' => 'oneway',
-      'dispatchMethod' => 'processHomeRTR',
-      'deptCity%5B0%5D' => 'DTW',
-      'returnCity%5B0%5D' => 'gru',
-      'deptMonth%5B0%5D' => '5',
-      'deptDay%5B0%5D' => '12',
-      'deptTime%5B0%5D' => '12M',
-      'noPax' => '1',
-      'cabin' => 'First',
-      'medallionTraveler' => '0',
-      'awardshowMUUpgrade' => 'on',
-      'awardMUUpgrade' => 'on',
-      'displayPreferredOnly' => '0',
-      'calendarSearch' => 'true',
-      'pricingSearch' => 'true',
-      'directServiceOnly' => 'off',
-      'hiddenFieldsId' => '',
-      'recentSearchBAU' => 'BAU'
-    }
-
-    uri = URI.parse(uriAddress)
-
-    # Full control
-    http = Net::HTTP.new(uri.host, uri.port)
-
-    request = Net::HTTP::Post.new(uri.request_uri)
-    request.set_form_data(params)
-
-    response = http.request(request)
+  def getCohrAwdSessID(response)
 
     all_cookies = response.get_fields('set-cookie')
     all_cookies.each { |c| if (c.include? 'cohrAwdSessID')
         return c.split('=')[1] end }
 
     raise 'cohrAwdSessID not found'
-  end
-
-  def test
-    uriAddress = 'http://www.delta.com/awards/selectFlights.do?dispatchMethod=processHomeRTR&EventId=PROCESS_HOME_RTR'
-    params = {
-      'oneWayOrRTR' => 'oneway',
-      'dispatchMethod' => 'processHomeRTR',
-      'deptCity%5B0%5D' => 'GRU',
-      'returnCity%5B0%5D' => 'DTW',
-      'deptMonth%5B0%5D' => '5',
-      'deptDay%5B0%5D' => '16',
-      'deptTime%5B0%5D' => '12M',
-      'noPax' => '1',
-      'cabin' => 'First',
-      'medallionTraveler' => '0',
-      'awardshowMUUpgrade' => 'on',
-      'awardMUUpgrade' => 'on',
-      'displayPreferredOnly' => '0',
-      'calendarSearch' => 'true',
-      'pricingSearch' => 'true',
-      'directServiceOnly' => 'off',
-      'hiddenFieldsId' => '',
-      'recentSearchBAU' => 'BAU'
-    }
-
-    uri = URI.parse(uriAddress)
-
-    # Full control
-    http = Net::HTTP.new(uri.host, uri.port)
-
-    request = Net::HTTP::Post.new(uri.request_uri)
-    request.set_form_data(params)
-
-    response = http.request(request)
-
-    File.open('deltaSearchRequest.html', 'w') { |file| file.write( response.body) }
   end
 
   def loadCalendar
@@ -109,13 +50,57 @@ class DeltaSite
     #    js_ts=1399735712540
 
     #    Body request
-    #    oneWayOrRTR=oneway&dispatchMethod=processHomeRTR&deptCity%5B0%5D=DTW&returnCity%5B0%5D=GRU&deptMonth%5B0%5D=6&deptDay%5B0%5D=16&deptTime%5B0%5D=12M&noPax=1&cabin=Coach&medallionTraveler=0&awardshowMUUpgrade=on&awardMUUpgrade=on&displayPreferredOnly=0&calendarSearch=true&pricingSearch=true&directServiceOnly=off&hiddenFieldsId=&recentSearchBAU=BAU
+    #    oneWayOrRTR=oneway&dispatchMethod=processHomeRTR&deptCity[0]=DTW&returnCity[0]=GRU&deptMonth[0]=6&deptDay[0]=16&deptTime[0]=12M&noPax=1&cabin=Coach&medallionTraveler=0&awardshowMUUpgrade=on&awardMUUpgrade=on&displayPreferredOnly=0&calendarSearch=true&pricingSearch=true&directServiceOnly=off&hiddenFieldsId=&recentSearchBAU=BAU
   end
 
-  def getHiddenFieldsId(responseBody)
+  def getTS(cohrAwdSessID, hiddenFieldsId, checksum, tSession_Cal)
+    uriString = 'http://www.delta.com/awards/wait.do;cohrAwdSessID=' + cohrAwdSessID
 
-    
-    
+    paramsGet = {:hiddenFieldsId => hiddenFieldsId,
+      :checksum => checksum,
+      :tSession => 'null',
+      :tSession_1DS => 'null',
+      :tSession_Cal => tSession_Cal,
+      :pricingSearch => 'true',
+      :dispatchMethod => 'processHomeRTR',
+      :poll => '1',
+      :reqType => 'ajax' }
+
+    uri = URI.parse( uriString );
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    request = Net::HTTP::Get.new(uri.path)
+    request.set_form_data( paramsGet )
+
+    # instantiate a new Request object
+    request = Net::HTTP::Get.new( uri.path+ '?' + request.body )
+
+    response = http.request(request)
+
+    if response.body =~ /(?m)ts=\K\d*/
+      return checksum = $&
+    end
+
+    raise 'ts not found'
+
+    # expected response
+    # /awards/selectFlights.do;cohrAwdSessID=jbreW9yA8R0xh9b?EventId=VIEW_CALENDAR&hiddenFieldsId=jbreW9yA8R0xh9b&dispatchMethod=processHomeRTR&checksum=1611650547*42&tSession=null&UIStatus=F&tSession_Cal=DeptNLI8261138&tSession_1DS=null&pricingSearch=true&ts=1400532554086#top
+  end
+
+  def getJs_Ts
+    return DateTime.now.strftime('%Q')
+  end
+
+  # Extract and returns the checksum field
+  def getCheckSum(response)
+    if response.body =~ /(?m)checksum=\K\d*\*\d*/
+      return checksum = $&
+    end
+
+    raise 'cohrAwdSessID not found'
+  end
+
+  def getHiddenFieldsId
     uriAddress = 'http://www.delta.com/awards/selectFlights.do?dispatchMethod=processHomeRTR&EventId=PROCESS_HOME_RTR'
     uri = URI.parse(uriAddress)
 
@@ -125,16 +110,112 @@ class DeltaSite
     request = Net::HTTP::Post.new(uri.request_uri)
 
     response = http.request(request)
-    
-    
 
-    doc = Nokogiri::HTML(responseBody.body)
-    
-    puts response.body
-    
+    doc = Nokogiri::HTML(response.body)
+
     return doc.css('input#hiddenFieldsId')[0]['value']
+  end
+
+  #
+  # The search is done here. The results are read in another request.
+  #
+  def requestSearchFlights(origim, destination, day, month)
+    uriAddress = 'http://www.delta.com/awards/selectFlights.do?dispatchMethod=processHomeRTR&EventId=PROCESS_HOME_RTR'
+    params = {
+      "oneWayOrRTR" => "oneway",
+      "dispatchMethod" => "processHomeRTR",
+      "deptCity[0]" => origim,
+      "returnCity[0]" => destination,
+      "deptMonth[0]" => month-1,
+      "deptDay[0]" => day,
+      "deptTime[0]" => "12M",
+      "noPax" => "1",
+      "cabin" => "First",
+      "medallionTraveler" => "0",
+      "awardshowMUUpgrade" => "on",
+      "awardMUUpgrade" =>  "on",
+      "displayPreferredOnly" => "0",
+      "calendarSearch" =>  "true",
+      "pricingSearch" => "true",
+      "directServiceOnly" => "off",
+      "hiddenFieldsId" =>  "",
+      "recentSearchBAU" => "BAU"
+    }
+    
+    puts "Searching %s-%s on %s/%s" % [origim, destination, day, month]
+
+    uri = URI.parse(uriAddress)
+
+    # Full control
+    http = Net::HTTP.new(uri.host, uri.port)
+
+    request = Net::HTTP::Post.new(uri.request_uri)
+    request.set_form_data(params)
+
+    response = http.request(request)
+
+    # cohrAwdSessID = getCohrAwdSessID(response)
+    hiddenFieldsId= getHiddenFieldsId()
+    cohrAwdSessID = hiddenFieldsId;
+    tSession_Cal = getTSession_Cal(response)
+    checksum = getCheckSum(response)
+
+    ts = getTS(cohrAwdSessID, hiddenFieldsId, checksum, tSession_Cal)
+    
+    gerCalendarResuls( hiddenFieldsId, checksum, tSession_Cal, ts, getJs_Ts(), cohrAwdSessID)
+  end
+
+  def get
+    # http://www.delta.com/awards/selectFlights.do;cohrAwdSessID=jbreW9yA8R0xh9b?EventId=VIEW_CALENDAR&hiddenFieldsId=jbreW9yA8R0xh9b&dispatchMethod=processHomeRTR&checksum=1611650547*42&tSession=null&UIStatus=F&tSession_Cal=DeptNLI8261138&tSession_1DS=null&pricingSearch=true&ts=1400532554086&js_ts=1400532526891
+  end
+
+  #
+  # Load final results
+  #
+  def gerCalendarResuls(hiddenFieldsId, checksum, tSession_Cal, ts, js_ts, cohrAwdSessID)
+    paramsGet = {
+      :EventId => 'VIEW_CALENDAR',
+      :hiddenFieldsId => hiddenFieldsId,
+      :dispatchMethod => 'processHomeRTR',
+      :checksum => checksum,
+      :tSession => 'null',
+      :UIStatus => 'F',
+      :tSession_Cal => tSession_Cal,
+      :tSession_1DS => 'null',
+      :pricingSearch => 'true',
+      :ts => ts,
+      :js_ts => js_ts
+    }
+
+    uri = URI.parse( "http://www.delta.com/awards/selectFlights.do;cohrAwdSessID=" + cohrAwdSessID);
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    request = Net::HTTP::Get.new(uri.path)
+    request.set_form_data( paramsGet )
+
+    # instantiate a new Request object
+    request = Net::HTTP::Get.new( uri.path+ '?' + request.body )
+
+    response = http.request(request)
+    
+    extractLowFare(response)
+  end
+
+  def extractLowFare(response)
+    response.body.each_line do |line|
+      fareMatch =  /<span id="cal_\d+_day_\d+_\d+_(?<day>\d*)(?<month>\w\w\w)_.+" class="mileageLevel">(?<fare>Low)<\/span>/m.match(line)
+      if (!fareMatch.nil?)
+        puts fareMatch['day'] +  fareMatch['month']
+      end
+    end
   end
 
 end
 
-puts DeltaSite.new().getHiddenFieldsId;
+DeltaSite.new().requestSearchFlights("GRU", "DTW", 7, 7)
+DeltaSite.new().requestSearchFlights("GRU", "ATL", 7, 7)
+DeltaSite.new().requestSearchFlights("GRU", "JFK", 7, 7)
+DeltaSite.new().requestSearchFlights("GIG", "ATL", 7, 7)
+DeltaSite.new().requestSearchFlights("BSB", "ATL", 7, 7)
+DeltaSite.new().requestSearchFlights("DTW", "SFO", 7, 7)
+DeltaSite.new().requestSearchFlights("GRU", "SFO", 7, 7)
