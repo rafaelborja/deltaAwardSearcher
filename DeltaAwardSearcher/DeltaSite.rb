@@ -116,11 +116,27 @@ class DeltaSite
     return doc.css('input#hiddenFieldsId')[0]['value']
   end
 
+  
+def requestSearchFlights(origim, destination, day, month, businessClass=true)
+  begin
+    requestSearch(origim, destination, day, month, businessClass)
+  rescue
+    puts "Trying again..."
+    requestSearch(origim, destination, day, month, businessClass)
+  end
+end
+
   #
   # The search is done here. The results are read in another request.
   #
-  def requestSearchFlights(origim, destination, day, month)
+  def requestSearch(origim, destination, day, month, businessClass=true)
     uriAddress = 'http://www.delta.com/awards/selectFlights.do?dispatchMethod=processHomeRTR&EventId=PROCESS_HOME_RTR'
+    if (businessClass)
+      cabin = 'First'
+    else
+      cabin = 'Coach'
+    end
+    
     params = {
       "oneWayOrRTR" => "oneway",
       "dispatchMethod" => "processHomeRTR",
@@ -130,7 +146,7 @@ class DeltaSite
       "deptDay[0]" => day,
       "deptTime[0]" => "12M",
       "noPax" => "1",
-      "cabin" => "First",
+      "cabin" => cabin,
       "medallionTraveler" => "0",
       "awardshowMUUpgrade" => "on",
       "awardMUUpgrade" =>  "on",
@@ -142,7 +158,7 @@ class DeltaSite
       "recentSearchBAU" => "BAU"
     }
     
-    puts "Searching %s-%s on %s/%s" % [origim, destination, day, month]
+    puts "Searching %s-%s on %s/%s - %s" % [origim, destination, day, month, cabin]
 
     uri = URI.parse(uriAddress)
 
@@ -218,4 +234,31 @@ DeltaSite.new().requestSearchFlights("GRU", "JFK", 7, 7)
 DeltaSite.new().requestSearchFlights("GIG", "ATL", 7, 7)
 DeltaSite.new().requestSearchFlights("BSB", "ATL", 7, 7)
 DeltaSite.new().requestSearchFlights("DTW", "SFO", 7, 7)
-DeltaSite.new().requestSearchFlights("GRU", "SFO", 7, 7)
+DeltaSite.new().requestSearchFlights("GRU", "DTW", 7, 7, false)
+DeltaSite.new().requestSearchFlights("GRU", "ATL", 7, 7, false)
+DeltaSite.new().requestSearchFlights("GRU", "JFK", 7, 7, false)
+DeltaSite.new().requestSearchFlights("GIG", "ATL", 7, 7, false)
+DeltaSite.new().requestSearchFlights("BSB", "ATL", 7, 7, false)
+
+DeltaSite.new().requestSearchFlights("DTW", "SFO", 7, 7, false)
+DeltaSite.new().requestSearchFlights("DTW", "LAX", 7, 7, false)
+DeltaSite.new().requestSearchFlights("DTW", "LAS", 7, 7, false)
+
+DeltaSite.new().requestSearchFlights("ATL", "SFO", 7, 7, false)
+DeltaSite.new().requestSearchFlights("ATL", "LAX", 7, 7, false)
+DeltaSite.new().requestSearchFlights("ATL", "LAS", 7, 7, false)
+
+DeltaSite.new().requestSearchFlights("SFO", "JFK", 7, 7, false)
+DeltaSite.new().requestSearchFlights("LAX", "JFK", 7, 7, false)
+DeltaSite.new().requestSearchFlights("LAS", "JFK", 7, 7, false)
+
+DeltaSite.new().requestSearchFlights("GRU", "YUL", 7, 7)
+DeltaSite.new().requestSearchFlights("GRU", "YUL", 7, 7, false)
+
+
+
+
+
+def search(origins, destinations, day, month)
+  # ["gru"], ["ATL, JFK", "DTW"]
+end
